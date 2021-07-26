@@ -1,0 +1,31 @@
+Linux Commands
+===============
+clear
+df -h
+df -hT
+lsblk
+la -lsblk
+sudo su
+sudo su -
+cd ..
+file -s  /dev /xvda (xvda -> file system)
+sudo mkfs -t ext4 /dev/xvda
+sudo mkdir Pavan1 (in Pavan1 you use what you want)
+nano /etc/fstab
+cat /etc/fstab
+pwd
+sudo blkid
+sudo mount /dev/xvda /Pavan1
+sudo umount /Pavan1
+umount -d /dev/xvda
+sudo mount -a
+
+==================
+for making Partition in EBS volume ====> sudo growpart /dev/xvda 1
+
+To extend XFS file system on each volume ====> sudo xfs_growfs -d /
+											   sudo xfs_growfs -d /data   (/ and /data are mountings)
+
+If the XFS Tool are not installed  ====> sudo yum install xfsprogs
+
+[ext4 file system] to extend ====> sudo resize2fs /dev/xvda1  (xvda1 is ext4 file name)

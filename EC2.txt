@@ -1,0 +1,136 @@
+EC2 Service: It is a Regional Service.
+--------------------------------------
+	EC2: Elastic Compute Cloud.(nothing but virtual machine)
+	--------------------------------------------------------	
+		 based on your application or your requirements it will creates the Server.
+		 
+		 1. EBS(persistance Storage Volume): elastic block storage ===>one EC2 instance attached to multiple EBS but we can't attach multiple EC2 Instances to single EBS.
+		----------------------------------------------------------					
+							there 2 types of Drives are there in EBS 1. SSD: Solid storage drives  VS  2. HDD : Hard Drives
+							
+									Cost	 			Speed		Durability			Highest capacity		Energy efficiency
+							HDD		Cheaper				Slower		Less durable			10TB				Use more energy
+							SSD		More expensive		Faster		More durable			4TB					Use less energy
+
+
+		 2. EFS(persistance Storage Volume): elastic file system -> It is Infinitly Scalable ( we don't need to define storage)
+		-----------------------------------------------------------
+																 =====>In this storage system we can attach multiple EC2 servers. 
+																 =====> EFS uses the NFS (Network File Sharing) protocall.
+																 =====> NFS Port TCP 2049
+								Different Storage Class are there in EFS:
+									>> Standard Storage -> after creating EFS defaultly consider as Standard
+									>> Infrequent Access Storage -> if your not using EFS since 30 days AWS automatically moves to Infrequent class.
+									>> Infrequent Access Requests
+		    
+		 3. Instance store:
+		 ------------------
+				=> in above 2 cases (EBS and EFS) the Server connceted to Datastorage Via network.
+				=> where as in Instance Store the Datastorage attached to EC2 instance directly. if  our EC2 Instance terminate we lose all the data.
+				    Ex: this case sutiable for we don't need Datastorage requirement and fast_operations.
+					
+    				
+	Secuirty group: nothing but virtual firewall. this means it will fillter trafic(incoming as well as outgoing)
+	NACL===> network access control list
+	data_transfer: 2types : 1. statefull - Secuirty group comes under statefull data_transfer. ===> this means we no need to define role for outgoing trafic. we already defined role for incoming trafic so that is applicable for outgoing trafic.
+				2. stateless - NACL===> network access control list (we need to define inbound and outbound rules)  
+
+Pricing Modals: 4 types are there:
+----------------------------------
+1. on demand
+2. spot Instances ===> we get 90% discount ( it is a type of biding for free servers). if any cilient requested for on-demand pricing AWS send a pop_up like we will teriminate your instance.
+3. savings plans ======> select for long_term consistance Usage. discount depend on no.of instances you taken
+4. reserved instances =====>  select for steady state or predictable usage for long time.in this we get Upto 75% discount. difference is " in this AWS reverse a specific Availability zone ( a slot in a partical data_center) 
+
+
+
+
+Instance Type:
+--------------
+
+1. General purpose
+2. Compute optimized
+3. Memory optimized
+4. Accelerated computing
+5. storage optimized
+6. Instance features
+7. Measuring Instance performance
+
+# Diff B/w IOPS and Throughput:
+	IOPS: input and output per sec ===> small chenks of data is taking and giving 
+			relation Between SIZE and IOPS: 1:50 (Ex: size 10, IOPS 10*50=500)
+	Throughput: A Bulk of data(how many chenks of data) is moved from Source to Destination.
+
+
+
+Types of IP's:
+--------------
+1. public ip:
+2. private ip:
+3. Elastic ip:
+
+
+# How to modify existing_volume in EC2 Instance:
+------------------------------------------------
+Steps:
+
+1. we need to stop the Instance.
+
+2. create snap_shot (Go to Volumes -> select Create Snap_Shot) ===> this nothing but backup
+
+3. Modify Volume ( Go to Volumes -> from Actions select MODIFY VOLUME -> change the Size)
+
+4. Start Instance
+
+
+# How add one more EBS (volume) to existing EC2 Instance:
+----------------------------------------------------------
+steps:
+
+1. First we need create Volume for that
+	a. Go to Volume -> click on Create_Volume -> select which type you need ex: SSD
+
+  Note: 1. Before Creating new Volume first check Our EC2 Instance on Which Available Zone (same Region Data center).
+	2. we need to create our New Volume also in same Region Data center(Available Zone).
+	# If our EC2 Instance in One Region Data_center and Our New Volume in Another Region Data_center so " we can't attach Volume to EC2 Instance".	
+
+2. Go to Volumes -> Select the Volume -> Select the ATTACH VOLUME from Actions (# need specify Instance ID or Name tag of Instance)
+
+3. Making an Amazon EBS volume available for use on Linux/windos/ .
+
+	a. EBS Volume -> Initial we don't have data in EBS Volume. to Use EBS we need to " mounting the EBS to paticular floder in root user "
+	
+	
+# How to create New AMI's (Amazon Machine Image)
+------------------------------------------------
+1. First we need to stop the Instance >> Than Go to Volumes ( Action -> select Snapshot)
+
+2. >> GO to Elastic Block Store in that select (snapshots) >> from (Actions) select (Create Image) >> create
+
+3. Go to Images (click on AMI'S) >> from (Actions) select (Lanch) >> then continue from "Choose Instance type"
+
+4. If your wish is " users should not use your AMI" for that:
+	GO to Images (click on AMI'S) and select your AMI >> from (Actions) select (Deregister) 
+	
+	
+# How to Copy AMI from one region to Another Region:
+-----------------------------------------------------
+
+
+
+
+
+	
+# How to copy Snapshort from One Region to Another Region: 
+----------------------------------------------------------
+1. GO to Snapshorts >> Go to (Actions) and select (copy) >> new window appered select (new Region)
+
+
+
+EFS: 
+----
+1. How to create EFS
+2. How attach multiple EC2 Instance to EFS 
+
+
+

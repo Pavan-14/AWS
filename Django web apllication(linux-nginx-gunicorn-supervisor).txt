@@ -1,0 +1,342 @@
+PYTHON Installation in LINUX:
+----------------------------
+	updating os
+	------------
+
+	> sudo yum update -y
+
+	> sudo yum upgrade -y
+
+
+installing specific python version
+----------------------------------
+condition is : don't switch to super user "sudo su".
+
+check present working directory is "/home/ec2-user"  by using "pwd"  
+	ex:
+		[ec2-user@ip-10-10-11-128 ~]$
+
+	sudo yum install gcc openssl-devel bzip2-devel libffi-devel
+	sudo yum install @development zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel xz xz-devel libffi-devel findutils
+	
+	cd /opt
+	sudo wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tgz
+	sudo tar xzf Python-3.6.5.tgz
+	
+	cd Python-3.6.5
+	sudo ./configure --enable-optimizations
+	sudo make altinstall
+	
+	check versions:
+	===============
+	[ec2-user@ip-10-10-11-128 Python-3.6.5]$ python --version
+	Python 2.7.18
+	[ec2-user@ip-10-10-11-128 Python-3.6.5]$ python3 --version
+	Python 3.7.9
+	[ec2-user@ip-10-10-11-128 Python-3.6.5]$ python3.6 --version
+	Python 3.6.5
+
+create virtual environment:
+============================
+
+	python3.6 -m venv <name of virtual environment>
+	ex:
+		 python3.6 -m venv books
+
+Activate Virtual Environment:
+==============================
+	source books/bin/activate
+	
+Checking pip version and upgrading
+----------------------------------
+	pip --version
+	pip install --upgrade pip
+
+	
+	
+	change Path-----optinal
+	------------------------
+	sudo rm /usr/bin/python  (which is only a link to /usr/bin/python2.7) ex: sudo rm /usr/bin/python3 ====> this is path of python 3.7.9
+			[root@ip-10-10-12-231 usr]# whereis python3.6.9
+			python3.6: /usr/local/bin/python3.6 
+			
+    	sudo ln -s /usr/bin/python3.6 /usr/bin/python
+			ex:
+				sudo ln -s /usr/local/bin/python3.6 /usr/bin/python3
+	
+	check by using python3 --version
+	
+	
+	create virtual environment and deactivate attach to .bashrc
+	------------------------------------------------------------
+	
+	6. python3.6 -m venv books
+		cd books
+		source bin/activate
+	
+	7. Use the deactivate command to exit the virtual environment.
+
+		(env) [ec2-user ~]$ deactivate
+
+		[ec2-user ~]$
+	8. To activate the virtual environment automatically when you log in, add it to the ~/.bashrc file.
+
+		[ec2-user ~]$ echo "source ${HOME}/books/bin/activate" >> ${HOME}/.bashrc
+	
+	9. Source the ~/.bashrc file in your home directory to reload your environment's bash environment. Reloading automatically activates your virtual environment. 	The prompt reflects the change (env). This change also applies to any future SSH sessions.
+
+		[ec2-user ~]$ source ~/.bashrc
+
+		(env) [ec2-user ~]$
+		
+	10. git clone https://github.com/Vissu-A/Web-Dev.git
+	
+	11. /home/ec2-user/virenv/django/Proj_Bookstore/Bookstore/requirements.txt     ====> need to install all packages in requirements.txt
+			
+			cd /home/ec2-user/virenv/django/Proj_Bookstore/Bookstore
+			pip install -r Proj_Bookstore/Bookstore/requirements.txt
+	
+	
+
+
+
+Installing git
+--------------
+	sudo yum install git 
+
+Cloning repository and installing requirements
+----------------------------------------------
+	git clone https://github.com/Vissu-A/Proj_Bookstore.git
+	cd Proj_Bookstore/
+	cd Bookstore/
+	pip install -r requirements.txt
+
+	Note:
+	-----
+	if you get any error like OSError:mysql_config while installling "mysqlclient", install bellow dependency linux packages.
+
+	installing dependency pacakges for mysqlclient
+	----------------------------------------------
+
+	AmzLinux
+	--------
+		for python 2
+		------------
+		sudo yum install mysql-devel gcc gcc-devel python-devel
+		
+		pip install mysqlclient
+
+		for python 3
+		------------
+		sudo yum install mysql-devel gcc gcc-devel python3-devel
+		
+		pip3 install mysqlclient
+
+Nginx Installation:
+===================
+	sudo amazon-linux-extras install nginx1
+	sudo service nginx status
+	sudo chkconfig nginx on 
+	
+	check version:
+	--------------
+	check by using ===> nginx -v (or) nginx -V
+	
+	sudo service nginx restart
+	
+	check:
+	------
+	Then open browser and enter "http://instance-ip:80". you will see Welcome to nginx! message
+	
+	
+Gunicorn Installation:
+======================
+	pip install gunicorn
+	
+CONNECTING Gunicorn and Nginx:
+===============================
+	(books) [ec2-user@ip-10-10-11-128 ~]$ cd Proj_Bookstore/Bookstore/
+	(books) [ec2-user@ip-10-10-11-128 Bookstore]$ ls
+		api  books  Bookstore  cuser  db.sqlite3  manage.py  my.cnf  post  requirements.txt
+		
+	(books) [ec2-user@ip-10-10-11-128 Bookstore]$ gunicorn --bind 0.0.0.0:8000 Bookstore.wsgi:application
+	
+	open the browser and enter IPv4 Public IP:8000 "http://3.80.120.202:8000/" this will enter to your application.
+
+	but your static files like css, images will not loaded we will deal this later
+
+	if you get dissalowed host error then add instance IPv4 Public IP address to ALLOWED_HOST list in settings.py file
+	
+	and run below command
+	
+	(books) [ec2-user@ip-10-10-11-128 Bookstore]$ gunicorn --bind 0.0.0.0:8000 Bookstore.wsgi:application
+	
+
+Install supervisor:
+===================
+	easy_install supervisor
+	cd /etc
+	sudo mkdir supervisor
+	sudo mkdir conf.d
+	cd conf.d/
+	sudo touch gunicorn.conf
+	sudo nano gunicorn.conf
+	------------------copy below text----------------------------------------------------------------------------------
+	[program:gunicorn]    
+	directory=/home/ec2-user/Proj_Bookstore/Bookstore    
+	command=/home/ec2-user/books/bin/gunicorn --workers 3 --bind http://3.89.252.34:8000 Bookstore.wsgi:application
+	autostart=true 
+	autorestart=true  
+
+	stderr_logfile=/var/log/gunicorn/gunicorn.err.log
+	stdout_logfile=/var/log/gunicorn/gunicorn.out.log
+
+	[group:guni]
+	programs:gunicorn
+	-----------------------------------upto------------------------------------------------------------------------------
+	
+	sudo mkdir /var/log/gunicorn
+	
+	then run this command "$ sudo supervisorctl reread"
+
+	Now let run supervisor in the background
+
+	run this command " sudo supervisorctl update"
+
+	Check status "sudo supervisorctl status"
+	
+MYSQL:
+------
+	sudo wget https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+	sudo yum localinstall mysql57-community-release-el7-11.noarch.rpm 
+	sudo yum install mysql-community-server
+	sudo systemctl start mysqld.service
+	
+	check mysqld Active or not:
+	---------------------------
+		sudo systemctl status mysqld
+
+	sudo grep 'temporary password' /var/log/mysqld.log     ======> copy the password										
+																	[ec2-user@ip-10-10-11-128 ~]$ sudo grep 'temporary password' /var/log/mysqld.log
+																	2021-05-27T16:29:25.853175Z 1 [Note] A temporary password is generated for root@localhost: yVrp6lb?<Fyr
+
+	whereis mysql
+	cd /usr/bin
+	mysql -u root -p
+	enter password:yVrp6lb?<Fyr
+
+
+	ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Demo_pw9';
+	GRANT ALL PRIVILEGES ON mynewdatabase.* TO 'myuser'@'localhost' WITH GRANT OPTION;
+	FLUSH PRIVILEGES;
+	sudo systemctl restart mysqld
+	CREATE USER 'myuser'@'localhost' IDENTIFIED BY 'mypassword';
+	
+	mysql -u root -p
+	enter password: Demo_pw9
+	create database bookstore;
+
+
+To store data in database use below commands:
+=============================================
+	cd /Proj_Bookstore/Bookstore   =====>where manage.py file location
+
+by using below commands it will creates tables in database:
+	
+	python manage.py makemigrations
+	
+	python manage.py migrate
+	
+How to serve Static files by using Nginx:
+=========================================	
+	 location /static/ {
+        autoindex on;
+        alias /home/ec2-user/Proj_Bookstore/Bookstore/books/static;
+
+        }
+
+
+	cd /Proj_Bookstore/Bookstore 
+	python manage.py collectstatic
+
+
+
+
+
+
+
+Nginx Installation in Linux:
+----------------------------
+	#!/bin/bash
+	sudo su
+	yum update -y
+	sudo amazon-linux-extras install -y nginx1
+	sudo service nginx start
+	sudo chkconfig nginx on
+	
+	check by using ===> nginx -v (or) nginx -V
+	
+	
+	sudo service nginx restart
+	
+Apache-Tomcat web-server Installation in Linux:
+----------------------------------------
+	#!/bin/bash
+	sudo su
+	yum update -y
+	yum install httpd -y
+	service httpd start
+	service httpd on
+
+
+create a new MySQL user with:
+==============================
+CREATE USER 'username' IDENTIFIED BY 'password';
+Replace username and password with a username and password of your choice.
+
+Alternatively, you can set up a user by specifying the machine hosting the database.
+
+If you are working on the machine with MySQL, use username@localhost to define the user.
+If you are connecting remotely, use username@ip_address, and replace ip_address with the actual address of the remote system hosting MySQL.
+Therefore, the command will be:
+
+CREATE USER 'username'@'localhost' IDENTIFIED BY 'password';
+or
+
+CREATE USER 'username'@'ip_address' IDENTIFIED BY 'password';
+
+
+
+You can also create a user that can connect from any machine with the command:
+
+CREATE USER 'username'@'%' IDENTIFIED BY 'password';
+
+
+
+
+
+mysql> CREATE USER 'vissu'@'%' IDENTIFIED BY 'adapala303';
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
+mysql> FLUSH PRIVILEGES;
+
+
+DROP USER 'username'@'localhost';
+GRANT ALL PRIVILEGES ON *.* To 'vissu'@'%' IDENTIFIED BY 'password';
+
+
+
+--------------------------------------
+CREATE USER 'jerry'@'localhost' IDENTIFIED BY 'jerrypassword';
+
+CREATE USER 'jerry'@'%' IDENTIFIED BY 'jerrypassword';
+
+To grant a user administrative privileges for a specific database, you must also give them the GRANT OPTION privilege. Here’s an example:
+
+GRANT ALL PRIVILEGES ON *.* to jerry@localhost IDENTIFIED BY 'jerrypassword' WITH GRANT OPTION;
+
+GRANT ALL PRIVILEGES ON *.* to jerry@'%' IDENTIFIED BY 'jerrypassword' WITH GRANT OPTION;
+
+FLUSH PRIVILEGES;
+
+EXIT;
+------------------------------------------

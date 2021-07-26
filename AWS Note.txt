@@ -1,0 +1,60 @@
+Cloud Providers are classified into 3 types
+	1. Private Cloud
+	2. Public Cloud
+	3. Hybird Cloud
+
+Types of Cloud Computing:
+------------------------
+1. Software as a Service (SaaS) Ex: Facebook,Google,Microsoft Teams,office365. =====> SaaS provides you with a complete product that is run and managed by the service provider. In most cases, people referring to SaaS are referring to end-user applications (such as web-based email). With a SaaS offering, you don’t have to think about how the service is maintained or how the underlying infrastructure is managed. You only need to think about how you will use that particular software. 
+
+2. Platform as a Service (Paas) Ex: "Elastic Bean Stalk",RDS Services in AWS ========>PaaS removes the need for you to manage underlying infrastructure (usually hardware and operating systems), and allows you to focus on the deployment and management of your applications. This helps you be more efficient as you don’t need to worry about resource procurement, capacity planning, software maintenance, patching, or any of the other undifferentiated heavy lifting involved in running your application. 
+
+3. Infrastructure as a Service(Iaas) Ex: AWS, Microsoft Azure =========>  It typically provides access to networking features, computers (virtual or on dedicated hardware), and data storage space.IaaS gives you the highest level of flexibility and management control.
+
+note:
+1. AWS providing Service called "Elastic Beam Stock". In this company need "code and Data" other things managed by Amazon.
+2. Some more Services offering Great flexability like Facebook,Google,Microsoft Teams. Here we simpliy upload the file other things managed by providers.
+
+AUTO SCALING: Based on Threshold Value they will increse the server(Ex: Big Billion Days (threshold Value= No.of Requests)
+
+Regions (Contains) -> Data Centers (also know as Availability Zone)
+Every Region contains 3 Availability Zones.
+Durability-99.99999999999(Ex: money in bank)
+Availability-99.999999 (Ex:we can't get money from bank in sunday)
+
+
+
+AWS- Amazon Web Services-> 170 services available in it.
+SERVICES:
+1. Regional Services:
+	(most of services are Regional Services that means before doing any thing we need select region) 
+2. Global Services:
+        (No need to select region for those Services Ex:IAM)
+		Note:
+		Eventually Consistent Services (end-user face issue to get updated data(few seconds)) 
+  		strongly Consistent Services(end-user will get updated data without interuption)
+
+1.IAM- Identity and Access Management -> it comes under (Security, Identity and compliance) 
+		
+		Identity-> comes under Authentication
+		Access-> comes under Authorization 
+	a. Groups-> No.of users more than one
+	b. Users -> single user
+	c. Permissions -> user level and service level
+	d. Roles -> in this user will not communicate with server instand of user role will communicate with batabase server
+	e. Customer management Polices
+	f. Identity Providers -> Active Directory(AD),Lightweight Directory Access Protocol (LDAP), Oracel Identity(OID),Security Assertion Markup Language2.0 (SAML)
+	g. Multi Factor Authentication (MFA)
+	
+	for creating new User: 1. we can create account by using GUI
+	      		       2. we can create AWS account by using CLI (previously we need install CLI software but now AWS providing inbilt Cloudshell)
+					-> in Cloudshell need to type <aws servicename otherthings>
+					   ex: I want create account for that [ aws iam create-user --user-name Pavan]
+
+  Root account -> the person having all permession for services and he will give access to other users/groups.
+  Eventually Consistent
+  strongly Consistent 
+
+2.Cloud Trail -> It will record all actions performed in AWS Console 
+3.Cloud Watch -> it will monitor CPU,RAM Utilization,your application logs
+

@@ -1,0 +1,183 @@
+
+# How can I use Logical Volume Manager (LVM) to create a logical volume (LV) on a partition created on my Amazon Elastic Block Store (Amazon EBS) volume?
+
+# Short description:
+
+#LVM allows you to allocate disk space and strip, re-mirror, and resize logical volumes. Using LVM, you can allocate an EBS volume or a set of EBS volumes to one or more physical volumes.
+
+# To use LVM on your EBS volume and extend the partitions:
+
+	1. Create physical volumes (PV) from your EBS volume.
+	2. Create a volume group (VG) and add the physical volumes into the volume group.
+	3. Create a logical volume (LV) and mount directory on the LVM.
+	4. Create and mount a file system.
+	5. Resize the logical volume.
+	Note: For more information on using LVM with Nitro-based instances, see Chapter 11. LVM (Logical Volume Manager) on the Red Hat Customer Portal website.
+
+	
+# Resolution:
+-------------
+Note: If you've already created LVM on your volume and mounted it for use, then follow the instructions beginning at Extend the logical volume.
+
+Create physical volumes on the partition of your EBS volume
+
+The underlying physical storage unit of an LVM logical volume is a block device such as a partition of an EBS volume or an entire EBS volume.
+
+Note: Nitro-based instances, expose volumes as NVMe devices. The block device names follow the pattern /dev/nvme1n1, /dev/nvme2n1, /dev/nvme3n1 and so on. If you're using a Nitro-based instance, then replace the device names in the following steps with the appropriate device name. For more information on device naming, see Device name considerations.
+
+1.    Open the Amazon Elastic Compute Cloud (Amazon EC2) console.
+
+2.    Create your EBS volume and then attach the volume to your instance.
+
+3.    Use the gdisk command to create a partition. For the variable Hex code or GUID, enter 8e00. The following example creates the partition /dev/xvdh1 on /dev/xvdh.
+
+$ sudo gdisk /dev/xvdh
+Command (? for help): n
+Partition number (1-1218, default 1): 1
+First sector (34-20971486, default = 2048) or {+-}size{KMGTP}: 
+Last sector (2048-20971486, default = 20971486) or {+-}size{KMGTP}: 
+Current type is 'Linux filesystem'
+Hex code or GUID (L to show codes, Enter = 8300): 8e00              
+Changed type of partition to 'Linux LVM'
+...
+OK; writing new GUID partition table (GPT) to /dev/xvdh.
+The operation has completed successfully.
+
+Use the lsblk command to confirm creation of the partition:
+$ lsblk 
+NAME    MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+xvda    202:0    0   8G  0 disk 
+└─xvda1 202:1    0   8G  0 part /
+xvdh    202:80   0  10G  0 disk 
+└─xvdh1 202:81   0  10G  0 part
+
+4.    Use the pvcreate command to create a physical volume from the partition. The following example, creates a physical volume from /dev/xvdh1.
+
+$ sudo pvcreate /dev/xvdh1
+  Physical volume "/dev/xvdh1" successfully created.
+Create volume groups and add the physical volumes into the volume group
+
+Use the vgcreate command to create a volume group to combine the new physical volumes. The following example uses one physical volume to create volume group examplegroup1.
+
+$ sudo vgcreate examplegroup1 /dev/xvdh1          
+  Volume group "examplegroup1" successfully created
+Use the vgs or vgdisplay to view the volume group details:
+
+$ sudo vgs
+  VG             #PV #LV #SN Attr   VSize  VFree 
+  examplegroup1   1   0   0 wz--n- <10.00g <10.00g
+Create a logical volume (LV) and a mount directory
+
+1.    Use the lvcreate command to create logical volumes (partitions) from your volume group. The following example creates one 9GB logical volume, lvexample1 from the examplegroup1 volume group.
+
+$ sudo lvcreate -n lvexample1 -L 9G examplegroup1
+  Logical volume "lvexample1" created
+Use the lvs or lvdisplay command to view the logical volume details:
+
+$ sudo lvs
+  LV          VG   Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert                                       
+  lvexample1 examplegroup1 -wi-a----- 9.00g 
+2.    Use the mkdir command to create a mount directory. The following example creates the directory /mnt1.
+
+$ sudo mkdir /mnt1
+
+# Create and mount a file system
+
+1.    Use the following commands to create a file system and mount the partitions for use.
+
+Run the mkfs -t command to create the file system. Note: Replace xfs with your file system type, if different. For example, ext2, ext3, or ext4.
+$ sudo mkfs -t xfs /dev/examplegroup1/lvexample1
+Run the lsblk -f command to verify creation of the new file system. Note: The file system type you created in the previous step appears under FSTYPE.
+$ lsblk -f
+NAME                         FSTYPE      LABEL UUID                                   MOUNTPOINT
+xvda                                                                                  
+├─xvda1                                                                               
+└─xvda2                      xfs               66e5e079-770e-4359-a9da-5205c3d8d5af   /                                          
+xvdh                                                                                  
+└─xvdh1                      LVM2_member       0UnOic-e2ng-XxH5-z0UW-7aTh-RxQK-KMrDqo 
+  └─examplegroup1-lvexample1 xfs              5db36052-81d5-4762-8502-6986ff3964e7   
+Run the mount command to mount the file system on the mount directory you created in the previous step:
+$ sudo mount /dev/examplegroup1/lvexample1 /mnt1
+2.    Edit the mount options in the /etc/fstab file so that the new mount persists after reboot.
+
+Note: Replace xfs with your file system type in the /etc/fstab entry, if different.
+/dev/examplegroup1/lvexample1 /mnt1   xfs     defaults,nofail   0   0
+Extend the logical volume
+
+There are two options for extending logical volumes:
+
+Option 1: Increase the size of the existing EBS volume.
+Option 2: Add additional EBS volumes to your volume group.
+Option 1: Increase the size of the existing EBS volume
+
+Note: When increasing the size of your existing volume, size changes usually take effect within seconds when the volume enters the optimizing state. The volume's performance is affected while in the optimizing state, but doesn't fall below the source configuration specification. Depending on your volume type, performance changes might take from a few minutes to a few hours. For more information, see Monitoring the progress of volume modifications.
+
+1.    Modify the size of the existing EBS volume.
+
+2.    Install the growpart utility:
+$ sudo yum install cloud-utils-growpart
+Note: Use the following command to install the growpart utility on Debian or Ubuntu-based systems:
+$ sudo apt install -y cloud-guest-utils
+3.    Run the growpart command to extend the partition, and then run the pvresize command to resize the PV. In the following example, partition /dev/xvdh1 is extended.
+$ sudo growpart /dev/xvdh 1                            
+CHANGED: disk=/dev/xvdh partition=1: start=2048 old: size=20971519,end=16777182 new: size=41940958,end=41943006
+
+$ sudo pvresize /dev/xvdh1                             
+  Physical volume "/dev/xvdh1" changed
+  1 physical volume(s) resized or updated / 0 physical volume(s) not resized
+Use the pvs or pvdisplay to view the physical volume details:
+$ sudo pvs
+  PV         VG            Fmt  Attr PSize   PFree  
+  /dev/xvdh1 examplegroup1 lvm2 a--  <20.00g <13.00g
+Use the vgs or vgdisplay to view the volume group details:
+$ sudo vgs
+  VG            #PV #LV #SN Attr   VSize   VFree  
+  examplegroup1   1   1   0 wz--n- <20.00g <13.00g
+4.    Run the lvextend command to extend the logical volume:
+$ sudo lvextend -L 19G /dev/examplegroup1/lvexample1
+Use the lvs or lvdisplay command to view the logical volume details:
+$ sudo lvs
+  LV        VG            Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lvexample1 examplegroup1 -wi-a----- 19.00g   
+5.    Extend the file system:
+
+Note: Make sure you enter the correct file system type in the /etc/fstab entry.
+
+Ext2, Ext3, and Ext4 file systems:
+$ sudo resize2fs /dev/examplegroup1/lvexample1
+
+
+XFS file systems:
+$ sudo yum install xfsprogs
+$ sudo xfs_growfs /dev/examplegroup1/lvexample1
+
+Option 2: Add additional EBS volumes to the volume group
+-----------------------------------------------------------
+	1.    Create another EBS volume of 10 GB and attach the volume to the instance. Create a partition on the device /dev/xvdi following step 3 of Create physical volumes on the partition of your EBS volume, and then run the pvcreate command. In the following example, the volume's block device name is /dev/xvdi1.
+	$ sudo pvcreate /dev/xvdi1
+	Physical volume "/dev/xvdi1" successfully created.
+	
+	2.    Use the vgextend command to extend the volume group and add the new volume. The following example extends the volume group examplegroup1 to include the volume /dev/xvdi1.
+	$ sudo vgextend examplegroup1 /dev/xvdi1
+	  Volume group "examplegroup2" successfully extended
+	To confirm the extension, run the vgs or vgdisplay command. The following example shows there are now two PV in the examplegroup1 volume group.
+	$ sudo vgs
+	  VG                       #PV #LV #SN Attr   VSize   VFree   
+	  examplegroup1            2   1   0 wz--n-  29.99g   20.99g
+	
+	3.    Run the lvextend command to extend the logical volume:
+	$ sudo lvextend -L 29G /dev/examplegroup1/lvexample1
+	
+	4.    Resize the file system:
+
+	Note: Depending on your use case, follow the steps for XFS or Ext2, Ext3, and Ext4 file systems.
+
+
+
+Ext2, Ext3, and Ext4 file systems:
+
+$ sudo resize2fs /dev/examplegroup1/lvexample1
+
+
+XFS file systems:
+$ sudo xfs_growfs /dev/examplegroup1/lvexample1

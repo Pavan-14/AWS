@@ -1,0 +1,445 @@
+1. Python Installation in Ubuntu:
+=================================
+	$ sudo apt update  
+	
+	$ sudo apt upgrade -y
+	
+	condition is : don't switch to super user "sudo su".
+
+	check present working directory is "/home/ubuntu"  by using "pwd"  
+	
+	
+	sudo apt install build-essential libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev libffi-dev
+
+	cd /tmp
+
+	wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tgz
+
+	sudo tar xzf Python-3.6.5.tgz
+	
+	cd Python-3.6.5
+	
+	sudo ./configure --enable-optimizations
+	
+	sudo make altinstall
+	
+	check version:
+	--------------
+	ubuntu@ip-10-10-11-32:~$ python3 --version
+	Python 3.8.5
+	ubuntu@ip-10-10-11-32:~$ python3.6 --version
+	Python 3.6.9
+	
+	Creating Virtual Environmet:
+	============================
+
+	python3.6 -m venv books
+
+	Activate environment:
+	---------------------
+	
+	source books/bin/activate
+	
+2. Git Installation and clone repo and install requirements.txt:
+================================================================
+
+	sudo apt-get install git
+	
+	git --version
+	
+	git clone https://github.com/Vissu-A/Proj_Bookstore.git
+	
+	
+	cd Proj_Bookstore/Bookstore/
+	
+	pip3.6 install -r requirements.txt
+	
+	Note:
+	-----
+	if you get any error like OSError:mysql_config while installling "mysqlclient", install bellow dependency linux packages.
+
+	installing dependency pacakges for mysqlclient
+	----------------------------------------------
+
+	AmzLinux
+	--------
+		for python 2
+		------------
+		
+		sudo apt-get install python3-dev default-libmysqlclient-dev build-essential
+		
+		pip install mysqlclient
+
+		for python 3
+		------------
+		sudo apt-get install python3-dev default-libmysqlclient-dev build-essential
+		
+		pip3 install mysqlclient
+
+	check by using: pip freeze
+	---------------
+	
+3. INSTALLING Nginx and Gunicorn:
+=================================
+
+	sudo apt-get install nginx -y
+	
+	pip install gunicorn
+	
+	Then open browser and enter "http://instance-ip:80". you will see Welcome to nginx! message
+
+	So, nginx is installed successfully
+	
+	NOTE:
+	------
+	If you are unable to see Welcome to nginx! message make sure that you are added HTTP rule in inbound rules of Security Group for the instance.
+
+	Checking pip version and upgrading
+	----------------------------------
+	pip --version
+	
+	pip install --upgrade pip
+	
+	
+4. CONNECTING Gunicorn and Nginx:
+=================================
+
+	=> cd Proj_Bookstore/Bookstore/
+	
+	=> gunicorn --bind 0.0.0.0:8000 Bookstore.wsgi:application
+	
+	open the browser and enter IPv4 Public IP:8000 "http://54.227.112.23:8000/" this will enter to your application.
+
+	but your static files like css, images will not loaded we will deal this later
+	---------------------------------------------------------------------------------------------------------------------
+	if you get dissalowed host error then add instance IPv4 Public IP address to ALLOWED_HOST list in settings.py file
+	---------------------------------------------------------------------------------------------------------------------
+	=> cd Bookstore/
+	
+	=> vi settings.py
+
+	
+	and run below command
+	
+	=> cd ..
+	
+	=> (books) ubuntu@ip-10-10-11-32:~/Proj_Bookstore/Bookstore/Bookstore$ gunicorn --bind 0.0.0.0:8000 Bookstore.wsgi:application
+
+	
+
+5. Configure Supervisour:
+=========================
+
+NOTE:
+------
+if you stop the command or close the reminal then our application will be stoped or down. This is where supervisor comes in
+
+Supervisour make sure our application runs in the background always, when ever the server is restarted or shutdown and started again or something went wrong in these 
+cases supervisour make sure our application upon running.
+
+This means supervisour make sure gunicorn always running in background to process request from web server nginx
+
+
+installing Supervisour
+
+	$ sudo apt-get install supervisor -y
+
+After installation success we need to create a configuration so supervisor read from that configuration
+
+	Go to cd /etc/supervisor/conf.d/
+	
+Nothing in the directory now create a new file
+	
+	sudo touch gunicorn.conf
+	
+file created now edit it
+
+	$ sudo nano gunicorn.conf
+	----------------------------copy the below text and paste in gunicorn.conf------------------------------------------
+	[program:gunicorn]    
+	directory=/home/ubuntu/Proj_Bookstore/Bookstore/   
+	command=/home/ubuntu/books/bin/gunicorn --workers 3 --bind http://54.90.79.118:8000 Bookstore.wsgi:application
+	autostart=true  
+	autorestart=true  
+
+	stderr_logfile=/var/log/gunicorn/gunicorn.err.log
+	stdout_logfile=/var/log/gunicorn/gunicorn.out.log
+
+	[group:guni]
+	programs:gunicorn
+	----------------------------------------------------------------------------------------------------------------------
+	
+Now let supervisor read this file, this will tell cofigurations correct or not
+
+first create the directory
+
+	$ sudo mkdir /var/log/gunicorn
+
+then run this command "$ sudo supervisorctl reread"
+
+Now let run supervisor in the background
+
+run this command " sudo supervisorctl update"
+
+Check status "sudo supervisorctl status"
+
+--------------------------------------------------------------------------------
+(books) ubuntu@ip-10-10-11-32:/etc/supervisor/conf.d$ sudo supervisorctl reread
+guni: available
+(books) ubuntu@ip-10-10-11-32:/etc/supervisor/conf.d$ sudo supervisorctl update
+guni: added process group
+(books) ubuntu@ip-10-10-11-32:/etc/supervisor/conf.d$ sudo supervisorctl status
+guni:gunicorn                    STARTING
+--------------------------------------------------------------------------------
+
+6. Now cofigure nginx to read from this socket file:
+====================================================
+	
+	cd ~
+	
+	cd /etc/nginx/sites-available
+	
+	then create new file "$ sudo touch django.conf"
+	
+	(books) ubuntu@ip-10-10-11-32:/etc/nginx/sites-available$ sudo touch django.conf
+
+	Now edit the file "$ sudo nano django.conf"
+
+	enter these lines in the file
+
+	server {
+			listen 80;
+			server_name 54.227.112.23 ;
+
+			location / {
+			include proxy_params;
+			proxy_pass http://54.227.112.23:8000;
+			}
+	}
+	
+
+
+	Now make nginx use this configuraions "$ sudo ln django.conf /etc/nginx/sites-enabled/"
+
+	test the nginx "$ sudo nginx -t"
+	
+	(books) ubuntu@ip-10-10-11-32:/etc/nginx/sites-available$ sudo nginx -t
+	-----------------------------------------------------------------------
+	nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+	nginx: configuration file /etc/nginx/nginx.conf test is successful
+	-----------------------------------------------------------------------
+	
+	Now restart nginx "$ sudo service nginx restart"
+
+	Now Enter IPv4 Public IP "http://52.14.57.170/" in the browser and you can see the application
+	
+	
+	
+7. Static files serving:
+=====================
+
+Now serving static files
+
+why the static files are not loading because these static files should be server by nginx but nginx is unable to find them
+
+we need to configure in the nginx confiugrations file which we created above django.conf
+
+	cd /etc/nginx/sites-available
+	
+	$ sudo nano django.conf
+	
+	add these lines 
+
+
+        location /static/ {
+        autoindex on;
+        alias /home/ubuntu/Proj_Bookstore/Bookstore/books/static/;
+
+        }
+		
+		
+	books) ubuntu@ip-10-10-11-32:/etc/nginx/sites-available$ sudo nginx -t
+	-----------------------------------------------------------------------
+	nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+	nginx: configuration file /etc/nginx/nginx.conf test is successful
+	-----------------------------------------------------------------------
+	
+	Now restart nginx "$ sudo service nginx restart"
+	
+	Then reload the nginx
+	(books) ubuntu@ip-10-10-11-32:/etc/nginx/sites-available$ sudo systemctl reload nginx
+	
+	
+	There is a problem with serving admin static files
+
+	To solve this define 
+	
+	cd Proj_Bookstore/Bookstore/
+
+	then run this command "python manage.py collectstatic"
+	
+	(books) ubuntu@ip-10-10-11-32:~/Proj_Bookstore/Bookstore$ python manage.py collectstatic
+
+	Then reload nginx "$ sudo systemctl reload nginx"
+
+	
+8. MySQL Installation:
+===================
+
+	sudo apt install mysql-server
+	
+	press y
+	
+	sudo service mysql status
+	
+	sudo mysql_secure_installation
+	
+	press Y
+	
+	enter 2
+	
+	press y,y,y,y
+	
+	sudo mysql
+	
+	ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Demo_pw9';
+	
+	FLUSH PRIVILEGES;
+	
+	mysql -u root -p
+	enter password: Demo_pw9
+	
+	create Database:
+	----------------
+	mysql> create database booksite;
+	Query OK, 1 row affected (0.01 sec)
+	
+	
+	sudo service mysql restart
+
+
+	make changes in settings.py:
+	----------------------------
+	cd Proj_Bookstore/Bookstore/Bookstore
+	
+	sudo vi settings.py
+	
+	
+	To store data in database use below commands:
+	=============================================
+	cd /Proj_Bookstore/Bookstore   =====>where manage.py file location
+
+by using below commands it will creates tables in database:
+	
+	python manage.py makemigrations
+	
+	python manage.py migrate
+	
+	
+	
+	
+--------------------------------------------------------
+9. Django celery mail sending up on user creation settings
+--------------------------------------------------------
+go to virtual environment
+
+install redis module " pip install redis "
+
+1. install redis server " sudo apt-get install redis-server " this redis server acts like messageing broker
+
+2. sudo nano /etc/redis/redis.conf
+
+Inside the file, find the supervised directive.
+The supervised directive is set to no by default. change this to systemd " supervised systemd "
+
+(or)
+
+$ sudo systemctl enable redis-server.service
+
+
+3. restart redis server " sudo systemctl restart redis.service "
+
+4. check redis server status "  sudo systemctl status redis " 
+
+5. To test that Redis is functioning correctly, connect to the server using the command-line client:
+
+	$ redis-cli
+	127.0.0.1:6379> ping
+	PONG
+
+
+6. change dir to  etc>supervisor>conf.d
+
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/var/log/celery$ cd /etc/supervisor/conf.d
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$
+
+
+7. created a conf file celery.conf " sudo touch celery.conf "
+
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ sudo touch celery.conf
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ ls -l
+total 8
+-rw-r--r-- 1 root root 637 Jun 15 17:26 celery.conf
+-rw-r--r-- 1 root root 417 Jun 15 15:09 gunicorn.conf
+
+8. edit this conf file 
+
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ sudo nano celery.conf
+
+paste this code in it
+*************code************
+[program:app-celery]
+command=/home/ubuntu/books//bin/celery -A Bookstore worker -l info
+directory=/home/ubuntu/Proj_Bookstore/Bookstore
+
+numprocs=1
+stdout_logfile=/var/log/celery/celery.out.log
+stderr_logfile=/var/log/celery/celery.err.log
+autostart=true
+autorestart=true
+startsecs=10
+
+; Need to wait for currently executing tasks to finish at shutdown.
+; Increase this if you have very long running tasks.
+stopwaitsecs = 600
+
+stopasgroup=true
+
+; Set Celery priority higher than default (999)
+; so, if rabbitmq is supervised, it will start first.
+priority=1000
+
+
+[group:celery]
+programs:app-celery
+**************************end**********************************
+	
+
+save the file and exit nano editor
+
+9. create a directory " /var/log/celery "   by using command " $ sudo mkdir /var/log/celery "
+
+10. Now reread the supervisor " sudo supervisorctl reread "
+
+11. update supervisor " sudo supervisorctl update "
+
+12. check the status " sudo supervisorctl status " 
+
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ sudo supervisorctl status
+celery:celery-email              RUNNING   pid 10367, uptime 0:00:22
+guni:gunicorn                    RUNNING   pid 10368, uptime 0:00:22
+
+That's all 
+
+If you are not reciving any mails upon user creation stop all supervisor services and start again
+
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ sudo supervisorctl stop all
+guni:gunicorn: stopped
+celery:celery-email: stopped
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ sudo supervisorctl start all
+guni:gunicorn: started
+celery:celery-email: started
+(Django2.0.7_Py3.6.9) ubuntu@ip-172-31-16-29:/etc/supervisor/conf.d$ sudo supervisorctl status
+celery:celery-email              RUNNING   pid 10367, uptime 0:00:22
+guni:gunicorn                    RUNNING   pid 10368, uptime 0:00:22
+
